@@ -192,4 +192,4 @@ def update_graph(medication, forecast_days, ma_period, comorbidity_type, predict
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8501)
+    app.run(debug=True, port=8501)
