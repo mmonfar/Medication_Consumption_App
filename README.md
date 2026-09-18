@@ -3,9 +3,9 @@
 A Dash application for visualising and forecasting medication consumption for
 patients, with an adjustment for comorbidity burden.
 
-> **Status:** prototype. The data is synthetic (generated at import time in
-> `app.py`) and the forecast is a placeholder, not a fitted model. See
-> "Forecasting approach" below.
+> **Status:** prototype on synthetic data. The forecasting pipeline is real --
+> models are selected per medication by rolling-origin cross-validation -- but
+> the data is generated, so the numbers are not clinically meaningful.
 
 ## Features
 - Select medication type, forecast horizon, and moving-average window.
