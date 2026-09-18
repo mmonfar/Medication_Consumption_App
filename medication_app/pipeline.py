@@ -24,12 +24,14 @@ import pandas as pd
 
 from .backtest import cross_validate, select_model
 from .config import MAX_HORIZON, MEDICATIONS
+from .models import NO_INTERVAL_MODELS
 from .forecasting import daily_counts, zero_share
-from .models import NO_INTERVAL_MODELS, Elasticity, fit_elasticity, fit_predict, observed_cohort_score
+from .intervals import DEFAULT_LEVELS, fit_conformal
+from .models import Elasticity, fit_elasticity, fit_predict, observed_cohort_score
 
 ARTIFACT_DIR = Path(__file__).resolve().parent.parent / "artifacts"
 ARTIFACT_PATH = ARTIFACT_DIR / "models.json"
-ARTIFACT_VERSION = 1
+ARTIFACT_VERSION = 3
 
 
 @dataclass
@@ -44,7 +46,12 @@ class MedicationForecast:
     beats_benchmark: bool
     intermittent: bool
     zero_share: float
-    has_intervals: bool
+    interval_levels: list[int]
+    half_widths: dict[str, list[float]]
+    cumulative_half_widths: dict[str, list[float]]
+    coverage: dict[str, float]
+    cumulative_coverage: dict[str, float]
+    native_intervals: bool
     elasticity_beta: float
     elasticity_se: float
     elasticity_usable: bool
@@ -52,6 +59,25 @@ class MedicationForecast:
     forecast_dates: list[str]
     forecast: list[float]
     leaderboard: list[dict] = field(default_factory=list)
+
+    def bands(self, forecast, level: int):
+        """Return ``(lower, upper)`` conformal bands for a forecast."""
+        import numpy as np
+
+        widths = np.asarray(self.half_widths[str(level)][: len(forecast)], dtype=float)
+        if widths.size < len(forecast):
+            widths = np.pad(widths, (0, len(forecast) - widths.size), mode="edge")
+        return np.clip(np.asarray(forecast) - widths, 0, None), np.asarray(forecast) + widths
+
+    def total_bounds(self, total: float, horizon: int, level: int) -> tuple[float, float]:
+        """Interval on cumulative demand over ``horizon`` days.
+
+        Calibrated on cumulative errors directly -- summing the daily bounds
+        would assume perfectly correlated daily errors and grossly over-widen.
+        """
+        widths = self.cumulative_half_widths[str(level)]
+        width = widths[min(horizon, len(widths)) - 1]
+        return max(total - width, 0.0), total + width
 
     @property
     def elasticity(self) -> Elasticity:
@@ -77,6 +103,11 @@ def train_medication(
     forecast = fit_predict(series, horizon, models=[chosen])
     values = forecast[model_name].clip(lower=0).tolist()
 
+    # Conformal intervals for every model, not just those with analytic ones:
+    # one mechanism keeps the bands comparable across medications, and Croston
+    # has no analytic interval at all (Shenstone & Hyndman, 2005).
+    bands = fit_conformal(series, chosen, horizon, calibration_windows=90, coverage_windows=30, step_size=2)
+
     row = scores[scores["model"] == model_name].iloc[0]
     return MedicationForecast(
         medication=medication,
@@ -87,7 +118,12 @@ def train_medication(
         beats_benchmark=beats,
         intermittent=bool(scores.attrs["intermittent"]),
         zero_share=zero_share(series["y"]),
-        has_intervals=model_name not in NO_INTERVAL_MODELS,
+        interval_levels=list(DEFAULT_LEVELS),
+        half_widths={str(k): v for k, v in bands.half_widths.items()},
+        cumulative_half_widths={str(k): v for k, v in bands.cumulative_half_widths.items()},
+        coverage={str(k): v for k, v in bands.coverage.items()},
+        cumulative_coverage={str(k): v for k, v in bands.cumulative_coverage.items()},
+        native_intervals=model_name not in NO_INTERVAL_MODELS,
         elasticity_beta=elasticity.beta,
         elasticity_se=elasticity.std_error,
         elasticity_usable=elasticity.is_usable,

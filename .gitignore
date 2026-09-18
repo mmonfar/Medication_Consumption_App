@@ -19,3 +19,7 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Trained artifacts and citation DB are committed deliberately (small, reviewable).
+# Local caches are not.
+.pytest_cache/
