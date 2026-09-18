@@ -31,7 +31,7 @@ from statsforecast import StatsForecast
 
 from .config import CV_HORIZON, CV_WINDOWS
 from .forecasting import is_intermittent
-from .models import BENCHMARKS, candidate_models
+from .models import BENCHMARKS, COMBINATION, candidate_models
 
 _META_COLUMNS = {"unique_id", "ds", "cutoff", "y"}
 
@@ -89,6 +89,16 @@ def cross_validate(
     predictions = sf.cross_validation(
         df=prepared, h=horizon, n_windows=windows, step_size=horizon
     ).reset_index(drop=True)
+
+    # A simple average of the non-benchmark candidates, scored as its own
+    # entry. Combining forecasts is a reliable, cheap accuracy gain (Bates &
+    # Granger, 1969) and it competes here on the same held-out footing as the
+    # models it averages -- it is not assumed to help.
+    components = [
+        c for c in predictions.columns if c not in _META_COLUMNS and c not in BENCHMARKS
+    ]
+    if len(components) > 1:
+        predictions[COMBINATION] = predictions[components].mean(axis="columns")
 
     insample = prepared["y"].to_numpy()
     intermittent = is_intermittent(insample)

@@ -67,6 +67,11 @@ Three decisions are load-bearing and easy to get wrong:
   calibrated separately from the daily bands, because summing daily bounds
   assumes perfectly correlated errors and grossly over-widens the total.
 
+An equal-weight **combination** of the non-benchmark candidates competes on the
+same held-out footing. On this data it places second everywhere and wins
+nowhere -- the expected "rarely best, never bad" behaviour -- so it is retained
+as a candidate but does not currently ship for any medication.
+
 Every methodological claim traces to a source in `references/citations.db`; see
 `REFERENCES.md`.
 
@@ -78,6 +83,13 @@ write `artifacts/models.json`, which the app loads at startup:
 ```bash
 python -m medication_app.train
 ```
+
+The artifact records the configuration it was trained under and the extent of
+the data it saw, so it cannot silently outlive them. A **configuration change**
+(seed, medication profile, history length) makes the artifact wrong, and the
+app discards it rather than serving it. **Data moving on** is reported in days
+and only flagged past a threshold, because the synthetic history is anchored to
+today and a one-day lag is routine.
 
 ## Project layout
 
@@ -91,6 +103,7 @@ python -m medication_app.train
 | `medication_app/backtest.py` | Rolling-origin CV, MASE/RMSSE, selection guard |
 | `medication_app/intervals.py` | Conformal prediction intervals |
 | `medication_app/pipeline.py` | Offline training, artifact read/write |
+| `medication_app/fingerprint.py` | Artifact freshness: config hash, data extent |
 | `medication_app/citations.py` | Citation database schema and export |
 | `references/citations.db` | Research trail: sources, retrievals, claims |
 | `medication_app/layout.py` | Dash layout (presentation only) |

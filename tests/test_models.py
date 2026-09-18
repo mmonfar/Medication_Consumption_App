@@ -121,3 +121,37 @@ def test_autocorrelated_residuals_mark_an_elasticity_suspect():
     )
     assert spurious.is_suspect
     assert not spurious.is_usable
+
+
+# --------------------------------------------------------------------------- #
+# Forecast combination
+# --------------------------------------------------------------------------- #
+
+
+def test_combination_competes_as_its_own_candidate(sample):
+    """Combining is a claim to be tested, not an assumption (Bates & Granger, 1969)."""
+    from medication_app.backtest import cross_validate
+    from medication_app.models import COMBINATION
+
+    _, consumption, _ = sample
+    scores = cross_validate(daily_counts(consumption, "Ciprofloxacin 500 mg"))
+    assert COMBINATION in set(scores["model"])
+
+
+def test_combination_is_not_treated_as_a_benchmark(sample):
+    from medication_app.backtest import cross_validate
+    from medication_app.models import COMBINATION
+
+    _, consumption, _ = sample
+    scores = cross_validate(daily_counts(consumption, "Ciprofloxacin 500 mg"))
+    row = scores[scores["model"] == COMBINATION].iloc[0]
+    assert not row["is_benchmark"]
+
+
+def test_component_models_exclude_benchmarks(sample):
+    from medication_app.models import BENCHMARKS, component_models
+
+    _, consumption, _ = sample
+    series = daily_counts(consumption, "Omeprazole 20 mg")
+    names = {type(m).__name__ for m in component_models(series)}
+    assert names and not (names & set(BENCHMARKS))

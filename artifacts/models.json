@@ -1,6 +1,12 @@
 {
-  "version": 3,
-  "trained_at": "2026-09-18T19:25:40",
+  "version": 4,
+  "trained_at": "2026-09-18T19:44:06",
+  "config_fingerprint": "71884339aa925228",
+  "data_extent": {
+    "rows": 23731,
+    "first_date": "2024-09-19",
+    "last_date": "2026-09-18"
+  },
   "medications": {
     "Omeprazole 20 mg": {
       "medication": "Omeprazole 20 mg",
@@ -229,6 +235,11 @@
           "model": "AutoETS",
           "primary": 0.7077,
           "cum_bias": -0.0706
+        },
+        {
+          "model": "Combination",
+          "primary": 0.7231,
+          "cum_bias": -0.0636
         },
         {
           "model": "SeasonalNaive",
@@ -486,6 +497,11 @@
           "cum_bias": -0.0045
         },
         {
+          "model": "Combination",
+          "primary": 0.811,
+          "cum_bias": -0.024
+        },
+        {
           "model": "AutoARIMA",
           "primary": 0.8164,
           "cum_bias": -0.0159
@@ -729,6 +745,11 @@
           "model": "AutoETS",
           "primary": 0.744,
           "cum_bias": -0.0507
+        },
+        {
+          "model": "Combination",
+          "primary": 0.7578,
+          "cum_bias": -0.0493
         },
         {
           "model": "AutoARIMA",
@@ -986,6 +1007,11 @@
           "cum_bias": -0.0797
         },
         {
+          "model": "Combination",
+          "primary": 0.7862,
+          "cum_bias": -0.0782
+        },
+        {
           "model": "AutoARIMA",
           "primary": 0.7887,
           "cum_bias": -0.0768
@@ -1229,6 +1255,11 @@
           "model": "AutoARIMA",
           "primary": 0.6384,
           "cum_bias": -0.077
+        },
+        {
+          "model": "Combination",
+          "primary": 0.6417,
+          "cum_bias": -0.0769
         },
         {
           "model": "AutoETS",
@@ -1484,6 +1515,11 @@
           "model": "CrostonSBA",
           "primary": 0.4361,
           "cum_bias": 0.3182
+        },
+        {
+          "model": "Combination",
+          "primary": 0.4378,
+          "cum_bias": 0.3528
         },
         {
           "model": "CrostonClassic",

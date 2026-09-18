@@ -42,6 +42,14 @@ NO_INTERVAL_MODELS = {"CrostonClassic", "CrostonSBA"}
 
 BENCHMARKS = ("Naive", "SeasonalNaive", "HistoricAverage")
 
+#: Name of the equal-weight average of the non-benchmark candidates.
+COMBINATION = "Combination"
+
+
+def component_models(series: pd.DataFrame) -> list:
+    """The non-benchmark candidates a combination forecast averages."""
+    return [m for m in candidate_models(series) if type(m).__name__ not in BENCHMARKS]
+
 
 def benchmark_models() -> list:
     """The honest floor. Always fitted; never skipped."""

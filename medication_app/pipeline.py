@@ -20,18 +20,27 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .backtest import cross_validate, select_model
 from .config import MAX_HORIZON, MEDICATIONS
 from .models import NO_INTERVAL_MODELS
+from .fingerprint import Freshness, assess, config_fingerprint, data_extent
 from .forecasting import daily_counts, zero_share
 from .intervals import DEFAULT_LEVELS, fit_conformal
-from .models import Elasticity, fit_elasticity, fit_predict, observed_cohort_score
+from .models import (
+    COMBINATION,
+    Elasticity,
+    component_models,
+    fit_elasticity,
+    fit_predict,
+    observed_cohort_score,
+)
 
 ARTIFACT_DIR = Path(__file__).resolve().parent.parent / "artifacts"
 ARTIFACT_PATH = ARTIFACT_DIR / "models.json"
-ARTIFACT_VERSION = 3
+ARTIFACT_VERSION = 4
 
 
 @dataclass
@@ -99,14 +108,26 @@ def train_medication(
     model_name, beats = select_model(scores)
     elasticity = fit_elasticity(series, cohort)
 
-    chosen = next(m for m in _instantiate(model_name, series))
-    forecast = fit_predict(series, horizon, models=[chosen])
-    values = forecast[model_name].clip(lower=0).tolist()
+    if model_name == COMBINATION:
+        fitted = component_models(series)
+        forecast = fit_predict(series, horizon, models=fitted)
+        values = (
+            forecast.drop(columns=["unique_id", "ds"])
+            .mean(axis="columns")
+            .clip(lower=0)
+            .tolist()
+        )
+    else:
+        fitted = _instantiate(model_name, series)[:1]
+        forecast = fit_predict(series, horizon, models=fitted)
+        values = forecast[model_name].clip(lower=0).tolist()
 
     # Conformal intervals for every model, not just those with analytic ones:
     # one mechanism keeps the bands comparable across medications, and Croston
     # has no analytic interval at all (Shenstone & Hyndman, 2005).
-    bands = fit_conformal(series, chosen, horizon, calibration_windows=90, coverage_windows=30, step_size=2)
+    bands = fit_conformal(
+        series, fitted, horizon, calibration_windows=90, coverage_windows=30, step_size=2
+    )
 
     row = scores[scores["model"] == model_name].iloc[0]
     return MedicationForecast(
@@ -150,28 +171,52 @@ def train_all(consumption: pd.DataFrame, cohort: pd.DataFrame) -> dict[str, Medi
         return {med: train_medication(med, consumption, cohort) for med in MEDICATIONS}
 
 
-def save(results: dict[str, MedicationForecast], path: Path = ARTIFACT_PATH) -> Path:
+def save(
+    results: dict[str, MedicationForecast],
+    consumption: pd.DataFrame | None = None,
+    path: Path = ARTIFACT_PATH,
+) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "version": ARTIFACT_VERSION,
         "trained_at": datetime.now().isoformat(timespec="seconds"),
+        "config_fingerprint": config_fingerprint(),
+        "data_extent": data_extent(consumption) if consumption is not None else {},
         "medications": {name: asdict(result) for name, result in results.items()},
     }
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
 
 
-def load(path: Path = ARTIFACT_PATH) -> tuple[dict[str, MedicationForecast], str] | tuple[None, None]:
-    """Load the trained artifact, or ``(None, None)`` if absent/incompatible."""
+@dataclass
+class Artifact:
+    """A loaded training artifact and what it says about its own provenance."""
+
+    models: dict[str, MedicationForecast]
+    trained_at: str
+    freshness: Freshness | None = None
+
+
+def load(
+    path: Path = ARTIFACT_PATH, consumption: pd.DataFrame | None = None
+) -> Artifact | None:
+    """Load the trained artifact, or ``None`` if absent or incompatible.
+
+    Passing ``consumption`` also assesses whether the artifact still describes
+    that data -- a stale model that keeps serving silently is the failure this
+    guards against.
+    """
     if not path.is_file():
-        return None, None
+        return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if payload.get("version") != ARTIFACT_VERSION:
-            return None, None
-        results = {
+            return None
+        models = {
             name: MedicationForecast(**data) for name, data in payload["medications"].items()
         }
     except (json.JSONDecodeError, KeyError, TypeError):
-        return None, None
-    return results, payload.get("trained_at", "unknown")
+        return None
+
+    freshness = assess(payload, consumption) if consumption is not None else None
+    return Artifact(models, payload.get("trained_at", "unknown"), freshness)

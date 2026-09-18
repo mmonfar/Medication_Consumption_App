@@ -267,6 +267,7 @@ def register_callbacks(
     cohort: pd.DataFrame,
     trained: dict[str, MedicationForecast],
     trained_at: str | None,
+    freshness=None,
 ) -> None:
     @app.callback(
         [
@@ -315,11 +316,17 @@ def register_callbacks(
         else:
             note = html.Div(f"Scenario applied: forecast scaled {scale:.2f}x.", style=note_style)
 
-        footer = (
-            [html.Div(f"Models trained {trained_at}.", style={"fontSize": "0.8em", "color": MUTED, "marginTop": "10px"})]
-            if trained_at
-            else []
-        )
+        footer = []
+        if freshness is not None and (freshness.is_stale or not freshness.config_matches):
+            footer.append(html.Div(freshness.describe(), style=_FLAG))
+        if trained_at:
+            footer.append(
+                html.Div(
+                    f"Models trained {trained_at}."
+                    + (f" {freshness.describe()}" if freshness is not None and not freshness.is_stale and freshness.config_matches else ""),
+                    style={"fontSize": "0.8em", "color": MUTED, "marginTop": "10px"},
+                )
+            )
 
         return (
             figure,

@@ -14,7 +14,7 @@ def main() -> None:
     print("cross-validating candidates per medication (this takes a minute)...")
     results = train_all(consumption, cohort)
 
-    path = save(results)
+    path = save(results, consumption)
     print(f"\n{'medication':22s} {'model':>16s} {'metric':>7s} {'score':>7s} {'bias':>8s}")
     for result in results.values():
         flag = "" if result.beats_benchmark else "  (benchmark)"

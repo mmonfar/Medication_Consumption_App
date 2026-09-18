@@ -76,32 +76,43 @@ class ConformalBands:
         return np.clip(forecast - width, 0, None), forecast + width
 
 
-def _cv_errors(
+def cv_predictions(
     series: pd.DataFrame,
-    model,
+    models: list,
     windows: int,
     horizon: int,
     step_size: int = 1,
     unique_id: str = "series",
 ) -> pd.DataFrame:
-    """Rolling-origin errors, labelled by how many steps ahead they were."""
+    """Rolling-origin predictions for several models, averaged into one forecast.
+
+    Used to calibrate intervals for an ensemble: the combination is not a
+    statsforecast model, so its errors are built by averaging its components'
+    cross-validated predictions rather than by refitting a single object.
+    """
     prepared = series.assign(unique_id=unique_id)[["unique_id", "ds", "y"]]
-    sf = StatsForecast(models=[model], freq="D", n_jobs=1)
+    sf = StatsForecast(models=models, freq="D", n_jobs=1)
     predictions = sf.cross_validation(
         df=prepared, h=horizon, n_windows=windows, step_size=step_size
     ).reset_index(drop=True)
 
-    name = next(c for c in predictions.columns if c not in _META_COLUMNS)
-    predictions["error"] = predictions["y"] - predictions[name]
+    component_columns = [c for c in predictions.columns if c not in _META_COLUMNS]
+    predictions["yhat"] = predictions[component_columns].mean(axis="columns")
+    return _annotate_errors(predictions)
+
+
+def _annotate_errors(predictions: pd.DataFrame) -> pd.DataFrame:
+    """Attach step index, per-step error and running cumulative error."""
+    predictions = predictions.copy()
+    predictions["error"] = predictions["y"] - predictions["yhat"]
     predictions["step"] = predictions.groupby("cutoff").cumcount() + 1
-    # Running totals within each origin, for the interval on cumulative demand.
     grouped = predictions.groupby("cutoff")
     predictions["cum_y"] = grouped["y"].cumsum()
-    predictions["cum_yhat"] = grouped[name].cumsum()
+    predictions["cum_yhat"] = grouped["yhat"].cumsum()
     predictions["cum_error"] = predictions["cum_y"] - predictions["cum_yhat"]
     return predictions[
-        ["cutoff", "step", "y", name, "error", "cum_y", "cum_yhat", "cum_error"]
-    ].rename(columns={name: "yhat"})
+        ["cutoff", "step", "y", "yhat", "error", "cum_y", "cum_yhat", "cum_error"]
+    ]
 
 
 def fit_conformal(
@@ -115,7 +126,19 @@ def fit_conformal(
 ) -> ConformalBands:
     """Calibrate conformal bands, then measure their coverage out-of-sample."""
     total_windows = calibration_windows + coverage_windows
-    errors = _cv_errors(series, model, total_windows, horizon, step_size=step_size)
+    models = model if isinstance(model, list) else [model]
+    errors = cv_predictions(series, models, total_windows, horizon, step_size=step_size)
+    return calibrate(errors, horizon, calibration_windows, levels)
+
+
+def calibrate(
+    errors: pd.DataFrame,
+    horizon: int,
+    calibration_windows: int,
+    levels: tuple[int, ...] = DEFAULT_LEVELS,
+) -> ConformalBands:
+    """Turn a table of rolling-origin errors into calibrated bands."""
+    coverage_windows = errors["cutoff"].nunique() - calibration_windows
 
     cutoffs = sorted(errors["cutoff"].unique())
     calibration_cutoffs = set(cutoffs[:calibration_windows])
