@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "refs-books-brain": {
+            "command": "python",
+            "args": [
+                "C:\\Users\\marti\\Python_Projects\\refs_books\\_system\\mcp_server.py"
+            ]
+        }
+    }
+}

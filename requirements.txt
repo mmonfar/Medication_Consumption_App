@@ -1,0 +1,6 @@
+# Curated top-level dependencies.
+# For an exact reproduction of the original environment, use requirements-lock.txt.
+dash>=2.17
+pandas>=2.2
+numpy>=1.26
+plotly>=5.22
