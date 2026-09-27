@@ -243,7 +243,8 @@ def build_layout(cohort_score: float) -> html.Div:
                 "Research and demonstration software. Not a medical device and not intended for "
                 "clinical decision-making, diagnosis or treatment. Provided \"as is\", without "
                 "warranty of any kind; the author accepts no liability for any use. Uses synthetic "
-                "data only.",
+                "data only. Personal project · not affiliated with any employer · "
+                "synthetic data only.",
                 style={"fontSize": "11px", "color": "#888", "marginTop": "16px"},
             ),
         ],
