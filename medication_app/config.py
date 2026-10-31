@@ -26,6 +26,8 @@ class MedicationProfile:
     intermittent: bool      # sporadic, restricted use -> many zero days
 
 
+# The numbers below are illustrative values for generating synthetic demo data.
+# They are not taken from any published source. Do not use them as clinical figures.
 PROFILES: dict[str, MedicationProfile] = {
     # High-volume ward staples: steady, weekday-heavy, little seasonality.
     "Omeprazole 20 mg": MedicationProfile(20, 14.0, 0.82, 0.05, 1.04, 0.35, False),

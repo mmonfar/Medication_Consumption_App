@@ -75,6 +75,8 @@ as a candidate but does not currently ship for any medication.
 Every methodological claim traces to a source in `references/citations.db`; see
 `REFERENCES.md`.
 
+The medication profiles used to make the synthetic demo data (rates, weekend factors, seasonal swing) are illustrative. They do not come from published literature. The forecasting methods are cited; the demo numbers are not.
+
 ## Training
 
 Model selection and interval calibration run offline (about two minutes) and
