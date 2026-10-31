@@ -17,12 +17,12 @@ from .forecasting import daily_counts, moving_average
 from .layout import ACCENT, INK, LINE, MUTED, WARN
 from .pipeline import MedicationForecast
 
-_HISTORY = "#b9c6d2"
-_FORECAST = "#d55e00"
-_BAND = "rgba(213, 94, 0, 0.16)"
+_HISTORY = "#7b8794"
+_FORECAST = "#b34700"
+_BAND = "rgba(179, 71, 0, 0.16)"
 
-_NOTE = {"color": MUTED, "fontSize": "0.88em", "margin": "4px 0"}
-_FLAG = {"color": WARN, "fontSize": "0.88em", "margin": "4px 0", "fontWeight": "600"}
+_NOTE = {"color": MUTED, "fontSize": "0.9em", "margin": "4px 0"}
+_FLAG = {"color": WARN, "fontSize": "0.9em", "margin": "4px 0", "fontWeight": "600"}
 
 
 def build_figure(
@@ -39,7 +39,7 @@ def build_figure(
             y=history["y"],
             mode="lines",
             name="Observed",
-            line={"color": _HISTORY, "width": 1},
+            line={"color": _HISTORY, "width": 1.5},
             hovertemplate="%{x|%d %b %Y}<br>%{y:.0f} administrations<extra></extra>",
         ),
         go.Scatter(
@@ -110,7 +110,7 @@ def _headline(
     total = float(forecast.sum())
     parts = [
         html.Div(
-            f"Next {horizon} days", style={"color": MUTED, "fontSize": "0.85em", "letterSpacing": "0.04em"}
+            f"Next {horizon} days", style={"color": MUTED, "fontSize": "0.875em", "letterSpacing": "0.04em"}
         ),
         html.Div(
             [
@@ -214,7 +214,7 @@ def _trust_panel(result: MedicationForecast, level: int) -> list:
         html.Details(
             [
                 html.Summary(
-                    "Model leaderboard", style={"cursor": "pointer", "color": MUTED, "fontSize": "0.85em"}
+                    "Model leaderboard", style={"cursor": "pointer", "color": MUTED, "fontSize": "0.875em"}
                 ),
                 html.Table(
                     [
@@ -251,7 +251,7 @@ def _trust_panel(result: MedicationForecast, level: int) -> list:
                             ]
                         ),
                     ],
-                    style={"fontSize": "0.85em", "marginTop": "8px", "borderCollapse": "collapse"},
+                    style={"fontSize": "0.875em", "marginTop": "8px", "borderCollapse": "collapse"},
                 ),
             ],
             style={"marginTop": "10px"},
@@ -275,6 +275,7 @@ def register_callbacks(
             Output("headline", "children"),
             Output("trust-panel", "children"),
             Output("scenario-note", "children"),
+            Output("summary-bar", "children"),
         ],
         [
             Input("medication-dropdown", "value"),
@@ -324,7 +325,7 @@ def register_callbacks(
                 html.Div(
                     f"Models trained {trained_at}."
                     + (f" {freshness.describe()}" if freshness is not None and not freshness.is_stale and freshness.config_matches else ""),
-                    style={"fontSize": "0.8em", "color": MUTED, "marginTop": "10px"},
+                    style={"fontSize": "0.875em", "color": MUTED, "marginTop": "10px"},
                 )
             )
 
@@ -333,4 +334,5 @@ def register_callbacks(
             _headline(result, adjusted, bounds, horizon, level),
             _trust_panel(result, level) + footer,
             note,
+            f"Next {horizon} days: {float(adjusted.sum()):,.0f} administrations",
         )

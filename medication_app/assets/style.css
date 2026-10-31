@@ -1,0 +1,11 @@
+/* Slider value bubbles sit above the slider: keep that space free so they never cover the hint text or tick numbers. */
+.dash-slider-wrapper { padding-top: 44px; }
+.dash-slider-mark { font-size: 14px; color: #5b6672; }
+.summary-bar { display: none; }
+@media (max-width: 760px) {
+  .summary-bar {
+    display: block; position: sticky; top: 0; z-index: 20;
+    background: #1c2530; color: #ffffff; font-size: 16px; font-weight: 700;
+    padding: 10px 14px; margin: 0 -32px 14px; text-align: center;
+  }
+}

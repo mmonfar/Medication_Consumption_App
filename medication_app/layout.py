@@ -57,13 +57,13 @@ _STEP_NUMBER = {
     "borderRadius": "50%",
     "backgroundColor": ACCENT,
     "color": "white",
-    "fontSize": "0.8em",
+    "fontSize": "0.875em",
     "fontWeight": "700",
     "marginRight": "10px",
     "flexShrink": "0",
 }
 _STEP_TITLE = {"display": "flex", "alignItems": "center", "marginBottom": "4px"}
-_HINT = {"color": MUTED, "fontSize": "0.85em", "margin": "0 0 14px 34px"}
+_HINT = {"color": MUTED, "fontSize": "0.875em", "margin": "0 0 14px 34px"}
 
 
 def _step(number: int, title: str, hint: str, control) -> html.Div:
@@ -97,13 +97,15 @@ def build_layout(cohort_score: float) -> html.Div:
                     html.P(
                         [
                             "A model is chosen per medication by rolling-origin cross-validation. ",
-                            html.Strong("Synthetic data — not for clinical use."),
+                            html.Strong("Demonstration tool on synthetic data. Not a medical device."),
                         ],
                         style={"color": MUTED, "margin": "0"},
                     ),
                 ],
                 style={"marginBottom": "22px"},
             ),
+            # Phone only (see assets/style.css): the answer stays in view while sliders move.
+            html.Div(id="summary-bar", className="summary-bar", role="status"),
             # ---------------------------------------------------------------- #
             html.Div(
                 [
@@ -132,7 +134,7 @@ def build_layout(cohort_score: float) -> html.Div:
                                     step=1,
                                     value=DEFAULT_FORECAST_DAYS,
                                     marks={i: str(i) for i in (1, 7, 14, 21, MAX_HORIZON)},
-                                    tooltip={"placement": "bottom", "always_visible": True},
+                                    tooltip={"placement": "top", "always_visible": True},
                                 ),
                             ),
                             _step(
@@ -149,7 +151,7 @@ def build_layout(cohort_score: float) -> html.Div:
                                             step=0.1,
                                             value=round(cohort_score, 1),
                                             marks={i: str(i) for i in range(0, 11, 2)},
-                                            tooltip={"placement": "bottom", "always_visible": True},
+                                            tooltip={"placement": "top", "always_visible": True},
                                         ),
                                         html.Div(id="scenario-note", style={"marginTop": "8px"}),
                                     ]
@@ -158,14 +160,14 @@ def build_layout(cohort_score: float) -> html.Div:
                             html.Details(
                                 [
                                     html.Summary(
-                                        "Chart options",
+                                        "Chart options (optional): average, interval, history",
                                         style={"cursor": "pointer", "color": MUTED, "fontSize": "0.9em"},
                                     ),
                                     html.Div(
                                         [
                                             html.Label(
                                                 "Moving average window",
-                                                style={"fontSize": "0.85em", "color": MUTED},
+                                                style={"fontSize": "0.875em", "color": MUTED},
                                             ),
                                             dcc.Dropdown(
                                                 id="ma-dropdown",
@@ -178,7 +180,7 @@ def build_layout(cohort_score: float) -> html.Div:
                                             html.Label(
                                                 "Prediction interval",
                                                 style={
-                                                    "fontSize": "0.85em",
+                                                    "fontSize": "0.875em",
                                                     "color": MUTED,
                                                     "marginTop": "10px",
                                                     "display": "block",
@@ -198,7 +200,7 @@ def build_layout(cohort_score: float) -> html.Div:
                                             html.Label(
                                                 "History shown",
                                                 style={
-                                                    "fontSize": "0.85em",
+                                                    "fontSize": "0.875em",
                                                     "color": MUTED,
                                                     "marginTop": "10px",
                                                     "display": "block",
@@ -245,7 +247,7 @@ def build_layout(cohort_score: float) -> html.Div:
                 "warranty of any kind; the author accepts no liability for any use. Uses synthetic "
                 "data only. Personal project · not affiliated with any employer · "
                 "synthetic data only.",
-                style={"fontSize": "11px", "color": "#888", "marginTop": "16px"},
+                style={"fontSize": "14px", "color": MUTED, "marginTop": "16px"},
             ),
         ],
         style=_PAGE,
