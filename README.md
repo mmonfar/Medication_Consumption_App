@@ -3,6 +3,12 @@
 A Dash application for visualising and forecasting medication consumption for
 patients, with an adjustment for comorbidity burden.
 
+![Medication forecast dashboard with a 14-day forecast chart and prediction interval, desktop view](docs/screenshots/readme_desktop.png)
+
+On a phone: <img src="docs/screenshots/readme_phone.png" alt="Same screen on a phone, 390 pixels wide" width="195">
+
+*Screenshot with synthetic data.*
+
 > **Status:** prototype on synthetic data. The forecasting pipeline is real --
 > models are selected per medication by rolling-origin cross-validation -- but
 > the data is generated, so the numbers are not clinically meaningful.
